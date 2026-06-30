@@ -60,7 +60,7 @@ _dbt_project_config = ProjectConfig(
     dbt_project_path=_TRANSFORM_DIR,
     manifest_path=_TRANSFORM_DIR / "target" / "manifest.json",
     project_name="meridian_batch",
-    install_dbt_deps=True,
+    install_dbt_deps=False,  # pre-installed in the Docker image via `dbt deps` in Dockerfile
 )
 
 _dbt_execution_config = ExecutionConfig(

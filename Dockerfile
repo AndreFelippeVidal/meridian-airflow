@@ -10,5 +10,9 @@ FROM astrocrpublic.azurecr.io/runtime:3.2-3
 COPY ingestion/ ${AIRFLOW_HOME}/ingestion/
 COPY transform/ ${AIRFLOW_HOME}/transform/
 
+# Pre-install dbt packages so Cosmos doesn't re-download them before every model task.
+# dbt deps only needs the filesystem — no database connection required.
+RUN cd ${AIRFLOW_HOME}/transform && dbt deps --no-partial-parse
+
 # Create the data directory so DuckDB can write meridian.duckdb here
 RUN mkdir -p ${AIRFLOW_HOME}/data

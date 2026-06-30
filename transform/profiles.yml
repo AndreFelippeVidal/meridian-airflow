@@ -5,6 +5,8 @@ meridian_batch:
       type: duckdb
       path: "{{ env_var('DUCKDB_PATH', '../data/meridian.duckdb') }}"
       threads: 1
+      settings:
+        memory_limit: "1GB"
 
 # Elementary expects a profile named 'elementary' pointing at the same warehouse.
 elementary:
@@ -14,6 +16,8 @@ elementary:
       type: duckdb
       path: "{{ env_var('DUCKDB_PATH', '../data/meridian.duckdb') }}"
       threads: 1
+      settings:
+        memory_limit: "1GB"
 
     # Optional Snowflake target — activate by setting target: snowflake
     # and populating env vars (see docs/adr/0002-duckdb-warehouse.md)
