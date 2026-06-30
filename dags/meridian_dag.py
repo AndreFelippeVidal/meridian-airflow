@@ -34,7 +34,8 @@ from pathlib import Path
 import pendulum
 from airflow.sdk import dag, task
 from airflow.sdk.exceptions import AirflowFailException
-from cosmos import DbtTaskGroup, ExecutionConfig, ProfileConfig, ProjectConfig
+from cosmos import DbtTaskGroup, ExecutionConfig, ProfileConfig, ProjectConfig, RenderConfig
+from cosmos.constants import TestBehavior
 from dlt.helpers.airflow_helper import PipelineTasksGroup
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -116,14 +117,18 @@ def meridian_batch_dag() -> None:
     # absolute path inside Docker. Without this, Cosmos runs dbt from a /tmp/
     # working directory and the relative fallback '../data/meridian.duckdb'
     # resolves to /tmp/data/meridian.duckdb (which does not exist).
+    # TestBehavior.AFTER_ALL: run all model tasks first, then all test tasks.
+    # AFTER_EACH (default) runs each model's tests immediately after that model
+    # builds, but relationship tests reference other models that may not exist yet.
     transform_group = DbtTaskGroup(
         group_id="transform_group",
         project_config=_dbt_project_config,
         profile_config=_dbt_profile_config,
         execution_config=_dbt_execution_config,
+        render_config=RenderConfig(test_behavior=TestBehavior.AFTER_ALL),
         operator_args={
             "env": {"DUCKDB_PATH": str(_DB_PATH)},
-            "pool": "duckdb",  # serialize Cosmos tasks — DuckDB is single-writer
+            "pool": "duckdb",
         },
     )
 
