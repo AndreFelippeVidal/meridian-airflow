@@ -1,11 +1,11 @@
-# Astro Runtime 13 = Airflow 3.x
-# https://www.astronomer.io/docs/astro/runtime-release-notes
-FROM quay.io/astronomer/astro-runtime:13.8.0
+# Astro Runtime 3.x = Airflow 3.2.1 (Python 3.12)
+# New registry for Airflow 3.x: astrocrpublic.azurecr.io/runtime
+# https://www.astronomer.io/docs/runtime/runtime-release-notes
+FROM astrocrpublic.azurecr.io/runtime:3.2-3
 
-# Install Python packages into the Airflow environment
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# packages.txt and requirements.txt are handled by ONBUILD hooks in the
+# Astro runtime base image — no need to COPY/pip-install them explicitly here.
 
-# Make ingestion + transform importable from DAGs
+# Make ingestion + transform importable from DAGs (not covered by ONBUILD)
 COPY ingestion/ ${AIRFLOW_HOME}/ingestion/
 COPY transform/ ${AIRFLOW_HOME}/transform/
