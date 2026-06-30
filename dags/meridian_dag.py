@@ -111,11 +111,16 @@ def meridian_batch_dag() -> None:
     # Reads manifest.json and creates one task per dbt model, preserving
     # the staging → marts dependency order. Equivalent to @dbt_assets in Dagster.
 
+    # Pass DUCKDB_PATH explicitly so profiles.yml env_var() resolves to the
+    # absolute path inside Docker. Without this, Cosmos runs dbt from a /tmp/
+    # working directory and the relative fallback '../data/meridian.duckdb'
+    # resolves to /tmp/data/meridian.duckdb (which does not exist).
     transform_group = DbtTaskGroup(
         group_id="transform_group",
         project_config=_dbt_project_config,
         profile_config=_dbt_profile_config,
         execution_config=_dbt_execution_config,
+        operator_args={"env": {"DUCKDB_PATH": str(_DB_PATH)}},
     )
 
     # ── 3. Row-count checks ───────────────────────────────────────────────────
