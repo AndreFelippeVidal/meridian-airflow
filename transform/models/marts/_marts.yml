@@ -1,0 +1,116 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: >
+      One row per customer enriched with lifetime order counts and first/last order dates.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: customer_name
+        data_tests: [not_null]
+      - name: customer_segment
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["standard", "premium", "vip"]
+      - name: lifetime_orders
+        data_tests: [not_null]
+      - name: has_ordered
+        data_tests: [not_null]
+
+  - name: dim_product
+    description: >
+      One row per product enriched with total units sold, total revenue, and margin metrics.
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+      - name: product_title
+        data_tests: [not_null]
+      - name: product_category
+        data_tests: [not_null]
+      - name: price
+        data_tests: [not_null]
+      - name: gross_margin
+        data_tests: [not_null]
+      - name: total_units_sold
+        data_tests: [not_null]
+
+  - name: fct_orders
+    description: >
+      One row per order. Grain = order_id. Joins order totals and payment info.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_id
+      - name: order_date
+        data_tests: [not_null]
+      - name: order_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["pending", "processing", "shipped", "delivered", "cancelled"]
+      - name: order_channel
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["web", "mobile", "api"]
+      - name: order_subtotal
+        data_tests: [not_null]
+
+  - name: fct_order_items
+    description: >
+      One row per order line item. Grain = order_item_id. Denormalized with order and product attrs.
+    columns:
+      - name: order_item_id
+        data_tests: [unique, not_null]
+      - name: order_id
+        data_tests: [not_null]
+      - name: product_id
+        data_tests: [not_null]
+      - name: quantity
+        data_tests: [not_null]
+      - name: line_total
+        data_tests: [not_null]
+
+  - name: fct_payments
+    description: >
+      One row per payment. Grain = payment_id. Splits amount into collected/failed/refunded buckets.
+    columns:
+      - name: payment_id
+        data_tests: [unique, not_null]
+      - name: order_id
+        data_tests: [not_null]
+      - name: amount
+        data_tests: [not_null]
+      - name: payment_method
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["card", "bank_transfer", "wallet", "crypto"]
+      - name: payment_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["pending", "completed", "failed", "refunded"]
+
+  - name: mart_marketplace_daily
+    description: >
+      One row per calendar day. Aggregates GMV, orders, AOV, units, and payment collection.
+      Used directly by the Evidence dashboard.
+    columns:
+      - name: order_date
+        data_tests: [unique, not_null]
+      - name: gmv
+        data_tests: [not_null]
+      - name: orders_placed
+        data_tests: [not_null]
+      - name: aov
+        description: Average order value; null on days with 0 orders.
+      - name: revenue_collected
+        data_tests: [not_null]

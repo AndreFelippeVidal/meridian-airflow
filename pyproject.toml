@@ -1,11 +1,22 @@
 [project]
-name = "meridian-project"
+name = "meridian-airflow"
 version = "0.1.0"
-description = "A project in the Meridian data + AI platform portfolio"
+description = "Meridian batch platform — Airflow 3 orchestration via Astronomer (contrast to meridian-batch-platform/Dagster)"
 requires-python = ">=3.12"
 dependencies = [
-    "meridian-core @ git+https://github.com/AndreFelippeVidal/meridian-core@v0.1.0",
+    "meridian-core @ git+https://github.com/AndreFelippeVidal/meridian-core@v0.2.0",
     "duckdb>=1.0",
+    "dlt[duckdb]>=1.4",
+    "dbt-core>=1.9",
+    "dbt-duckdb>=1.9",
+    "elementary-data[duckdb]>=0.16",
+    "pyiceberg[duckdb,sql-sqlite]>=0.9",
+    "sqlalchemy>=2.0.18",
+    "pyarrow>=17.0",
+    # Airflow + providers (used by tests and local runs outside Docker)
+    "apache-airflow>=3.0",
+    "apache-airflow-providers-common-sql>=1.0",
+    "astronomer-cosmos>=1.5",
 ]
 
 [dependency-groups]
@@ -20,6 +31,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+exclude = [".astro", "dags/exampledag.py", "tests/dags"]
 
 [tool.ruff.lint]
 # E/F pyflakes+pycodestyle, I isort, UP pyupgrade, B bugbear, SIM simplify
@@ -33,6 +45,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 addopts = "-q --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [build-system]
 requires = ["hatchling"]

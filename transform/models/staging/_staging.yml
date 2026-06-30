@@ -1,0 +1,127 @@
+version: 2
+
+models:
+  - name: stg_meridian__customers
+    description: One row per customer — renames and casts only, no business logic.
+    columns:
+      - name: customer_id
+        description: Surrogate key for the customer.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+        data_tests: [not_null]
+      - name: customer_email
+        data_tests: [not_null]
+      - name: customer_country
+        data_tests: [not_null]
+      - name: signup_date
+        data_tests: [not_null]
+      - name: customer_segment
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["standard", "premium", "vip"]
+
+  - name: stg_meridian__products
+    description: One row per product — renames and casts only.
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+      - name: product_title
+        data_tests: [not_null]
+      - name: product_category
+        data_tests:
+          - not_null
+          - accepted_values:
+              values:
+                - "Electronics"
+                - "Clothing"
+                - "Home & Garden"
+                - "Books"
+                - "Sports"
+                - "Beauty"
+                - "Toys"
+                - "Food & Drink"
+      - name: price
+        data_tests: [not_null]
+      - name: cost
+        data_tests: [not_null]
+      - name: supplier_id
+        data_tests: [not_null]
+
+  - name: stg_meridian__orders
+    description: One row per order — renames, casts, and splits ordered_at into timestamp + date.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_meridian__customers')
+              field: customer_id
+      - name: ordered_at
+        data_tests: [not_null]
+      - name: order_date
+        data_tests: [not_null]
+      - name: order_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["pending", "processing", "shipped", "delivered", "cancelled"]
+      - name: order_channel
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["web", "mobile", "api"]
+
+  - name: stg_meridian__order_items
+    description: One row per order line item — adds computed line_total.
+    columns:
+      - name: order_item_id
+        data_tests: [unique, not_null]
+      - name: order_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_meridian__orders')
+              field: order_id
+      - name: product_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_meridian__products')
+              field: product_id
+      - name: quantity
+        data_tests: [not_null]
+      - name: unit_price
+        data_tests: [not_null]
+      - name: line_total
+        data_tests: [not_null]
+
+  - name: stg_meridian__payments
+    description: One row per payment — renames ts → paid_at.
+    columns:
+      - name: payment_id
+        data_tests: [unique, not_null]
+      - name: order_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_meridian__orders')
+              field: order_id
+      - name: amount
+        data_tests: [not_null]
+      - name: payment_method
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["card", "bank_transfer", "wallet", "crypto"]
+      - name: payment_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["pending", "completed", "failed", "refunded"]
+      - name: paid_at
+        data_tests: [not_null]

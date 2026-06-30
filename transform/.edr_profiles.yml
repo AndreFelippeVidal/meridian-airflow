@@ -1,0 +1,5 @@
+default:
+  type: duckdb
+  dbname: meridian
+  path: ../data/meridian.duckdb
+  threads: 1

@@ -1,0 +1,13 @@
+# Astro Runtime includes Airflow 3 core and common providers.
+# Add extra packages here — they are installed into the Airflow runtime image.
+
+# Data pipeline deps
+meridian-core @ git+https://github.com/AndreFelippeVidal/meridian-core@v0.2.0
+dlt[duckdb]>=1.4
+dbt-core>=1.9
+dbt-duckdb>=1.9
+elementary-data[duckdb]>=0.16
+duckdb>=1.0
+
+# dbt orchestration in Airflow
+astronomer-cosmos[dbt-core]>=1.5

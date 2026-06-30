@@ -1,0 +1,29 @@
+meridian_batch:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../data/meridian.duckdb') }}"
+      threads: 1
+
+# Elementary expects a profile named 'elementary' pointing at the same warehouse.
+elementary:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../data/meridian.duckdb') }}"
+      threads: 1
+
+    # Optional Snowflake target — activate by setting target: snowflake
+    # and populating env vars (see docs/adr/0002-duckdb-warehouse.md)
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', '') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'MERIDIAN') }}"
+      schema: raw
+      threads: 4

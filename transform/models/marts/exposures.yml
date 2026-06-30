@@ -1,0 +1,17 @@
+version: 2
+
+exposures:
+  - name: meridian_dashboard
+    type: dashboard
+    maturity: medium
+    description: >
+      Evidence static dashboard showing GMV trend, orders, AOV, top products, and customer metrics.
+    depends_on:
+      - ref('mart_marketplace_daily')
+      - ref('dim_customer')
+      - ref('dim_product')
+      - ref('fct_orders')
+      - ref('fct_payments')
+    owner:
+      name: Andre Felippe Vidal
+      email: andrefelippevidal@gmail.com
