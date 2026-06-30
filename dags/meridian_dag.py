@@ -120,12 +120,18 @@ def meridian_batch_dag() -> None:
     # TestBehavior.AFTER_ALL: run all model tasks first, then all test tasks.
     # AFTER_EACH (default) runs each model's tests immediately after that model
     # builds, but relationship tests reference other models that may not exist yet.
+    # select_models: run only our custom models; Elementary observability models
+    # run as part of the edr quality_report task instead of as individual DAG tasks.
+    # This avoids ~28 Elementary model tasks queuing ahead of stg_/fct_ models.
     transform_group = DbtTaskGroup(
         group_id="transform_group",
         project_config=_dbt_project_config,
         profile_config=_dbt_profile_config,
         execution_config=_dbt_execution_config,
-        render_config=RenderConfig(test_behavior=TestBehavior.AFTER_ALL),
+        render_config=RenderConfig(
+            test_behavior=TestBehavior.AFTER_ALL,
+            select=["path:models/staging", "path:models/marts"],
+        ),
         operator_args={
             "env": {"DUCKDB_PATH": str(_DB_PATH)},
             "pool": "duckdb",

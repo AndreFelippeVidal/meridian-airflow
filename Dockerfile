@@ -15,7 +15,8 @@ COPY --chown=astro:0 transform/ ${AIRFLOW_HOME}/transform/
 # without a live database. dbt parse reads SQL/YAML only — no DB connection needed.
 RUN cd ${AIRFLOW_HOME}/transform \
     && dbt deps --no-partial-parse \
-    && dbt parse --profiles-dir . --profile meridian_batch --target duckdb --no-partial-parse
+    && dbt parse --profiles-dir . --profile meridian_batch --target duckdb --no-partial-parse \
+    && chown -R astro:0 ${AIRFLOW_HOME}/transform
 
 # Create the data directory so DuckDB can write meridian.duckdb here
 RUN mkdir -p ${AIRFLOW_HOME}/data
