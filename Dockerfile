@@ -9,3 +9,6 @@ FROM astrocrpublic.azurecr.io/runtime:3.2-3
 # Make ingestion + transform importable from DAGs (not covered by ONBUILD)
 COPY ingestion/ ${AIRFLOW_HOME}/ingestion/
 COPY transform/ ${AIRFLOW_HOME}/transform/
+
+# Create the data directory so DuckDB can write meridian.duckdb here
+RUN mkdir -p ${AIRFLOW_HOME}/data

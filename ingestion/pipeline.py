@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 import dlt
 
 from ingestion.meridian_source import meridian_source
 
-_DB_PATH = "data/meridian.duckdb"
+# Resolve absolute path so dlt never treats it as relative to its own working dir.
+# DUCKDB_PATH env var takes priority (useful for Docker/CI overrides).
+_DB_PATH = os.environ.get(
+    "DUCKDB_PATH",
+    str(Path(__file__).parent.parent / "data" / "meridian.duckdb"),
+)
 _PIPELINE_NAME = "meridian_duckdb"
 _DATASET_NAME = "raw"
 
