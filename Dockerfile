@@ -6,9 +6,10 @@ FROM astrocrpublic.azurecr.io/runtime:3.2-3
 # packages.txt and requirements.txt are handled by ONBUILD hooks in the
 # Astro runtime base image — no need to COPY/pip-install them explicitly here.
 
-# Make ingestion + transform importable from DAGs (not covered by ONBUILD)
-COPY ingestion/ ${AIRFLOW_HOME}/ingestion/
-COPY transform/ ${AIRFLOW_HOME}/transform/
+# Make ingestion + transform importable from DAGs (not covered by ONBUILD).
+# --chown=astro:0 matches the ONBUILD COPY so dbt can write logs as the astro user.
+COPY --chown=astro:0 ingestion/ ${AIRFLOW_HOME}/ingestion/
+COPY --chown=astro:0 transform/ ${AIRFLOW_HOME}/transform/
 
 # Pre-install dbt packages so Cosmos doesn't re-download them before every model task.
 # dbt deps only needs the filesystem — no database connection required.

@@ -6,3 +6,9 @@ logs/
 .venv
 airflow.db
 airflow.cfg
+# dbt ephemeral artifacts — baked into the image via dbt deps / dbt compile
+transform/logs/
+transform/target/
+transform/dbt_packages/
+# local data files — never copy DuckDB into the image
+data/
