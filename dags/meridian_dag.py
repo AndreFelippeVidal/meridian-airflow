@@ -120,13 +120,16 @@ def meridian_batch_dag() -> None:
         project_config=_dbt_project_config,
         profile_config=_dbt_profile_config,
         execution_config=_dbt_execution_config,
-        operator_args={"env": {"DUCKDB_PATH": str(_DB_PATH)}},
+        operator_args={
+            "env": {"DUCKDB_PATH": str(_DB_PATH)},
+            "pool": "duckdb",  # serialize Cosmos tasks — DuckDB is single-writer
+        },
     )
 
     # ── 3. Row-count checks ───────────────────────────────────────────────────
     # Equivalent to @dg.asset_check(blocking=True) in Dagster.
 
-    @task(task_id="check_mart_rows")
+    @task(task_id="check_mart_rows", pool="duckdb")
     def check_mart_rows() -> None:
         import duckdb
         con = duckdb.connect(str(_DB_PATH), read_only=True)

@@ -17,9 +17,9 @@ airflow:
       conn_extra:
         example_extra_field: example-value
   pools:
-    - pool_name:
-      pool_slot:
-      pool_description:
+    - pool_name: duckdb
+      pool_slot: 1
+      pool_description: "DuckDB single-writer pool — serializes all tasks that open the DB file"
   variables:
     - variable_name:
       variable_value:
