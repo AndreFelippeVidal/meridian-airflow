@@ -102,9 +102,10 @@ def meridian_batch_dag() -> None:
     ingest_tasks.add_run(
         pipeline=pipeline,
         data=source,
-        decompose="serialize",   # one task per dlt resource
+        decompose="serialize",
         trigger_rule="all_done",
         retries=1,
+        pool="duckdb",
     )
 
     # ── 2. Transform — Cosmos DbtTaskGroup ────────────────────────────────────
