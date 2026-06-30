@@ -11,12 +11,16 @@ FROM astrocrpublic.azurecr.io/runtime:3.2-3
 COPY --chown=astro:0 ingestion/ ${AIRFLOW_HOME}/ingestion/
 COPY --chown=astro:0 transform/ ${AIRFLOW_HOME}/transform/
 
-# Pre-install dbt packages and compile the manifest so Cosmos can load the DAG
-# without a live database. dbt parse reads SQL/YAML only — no DB connection needed.
+# Run as root so chown is authoritative: dbt deps downloads tarballs with
+# 0444 files; non-root chown silently fails on group changes. After chown,
+# chmod u+w ensures the astro user can overwrite everything at runtime.
+USER root
 RUN cd ${AIRFLOW_HOME}/transform \
     && dbt deps --no-partial-parse \
     && dbt parse --profiles-dir . --profile meridian_batch --target duckdb --no-partial-parse \
-    && chown -R astro:0 ${AIRFLOW_HOME}/transform
+    && chown -R astro:0 ${AIRFLOW_HOME}/transform \
+    && chmod -R u+w ${AIRFLOW_HOME}/transform
+USER astro
 
 # Create the data directory so DuckDB can write meridian.duckdb here
 RUN mkdir -p ${AIRFLOW_HOME}/data

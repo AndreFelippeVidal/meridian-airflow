@@ -156,6 +156,12 @@ def meridian_batch_dag() -> None:
 
     @task(task_id="quality_report")
     def quality_report() -> None:
+        import shutil
+        # edr report always runs 'dbt deps' internally. If dbt_packages/ was
+        # baked into the image with any root-owned or read-only files, the astro
+        # user gets EACCES. Wipe it so edr creates it fresh as the current user.
+        shutil.rmtree(_TRANSFORM_DIR / "dbt_packages", ignore_errors=True)
+
         report_path = _TRANSFORM_DIR / "edr_target" / "elementary_report.html"
         result = subprocess.run(
             [
