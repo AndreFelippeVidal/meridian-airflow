@@ -1,0 +1,6 @@
+# Per-project infra goes here (Postgres, MinIO, Redpanda, etc.). Kept local + free.
+services:
+  app:
+    build: .
+    volumes:
+      - ./data:/app/data
