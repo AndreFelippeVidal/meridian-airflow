@@ -20,6 +20,14 @@ RUN cd ${AIRFLOW_HOME}/transform \
     && dbt parse --profiles-dir . --profile meridian_batch --target duckdb --no-partial-parse \
     && chown -R astro:0 ${AIRFLOW_HOME}/transform \
     && chmod -R u+w ${AIRFLOW_HOME}/transform
+
+# `edr report` cd's into elementary's bundled internal dbt project and runs
+# `dbt deps`, which tries to create dbt_packages/ there. That project is pip
+# installed into root-owned site-packages (mode 755), so the astro user (uid
+# 50000) cannot write it → [Errno 13] Permission denied: 'dbt_packages'.
+# Make the internal project writable so edr can install its deps at task time.
+RUN EL_PROJECT="$(python -c 'import elementary, os; print(os.path.join(os.path.dirname(elementary.__file__), "monitor", "dbt_project"))')" \
+    && chmod -R a+w "$EL_PROJECT"
 USER astro
 
 # Create the data directory so DuckDB can write meridian.duckdb here
