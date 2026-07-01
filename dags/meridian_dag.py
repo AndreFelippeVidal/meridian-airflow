@@ -154,24 +154,39 @@ def meridian_batch_dag() -> None:
     # ── 4. Elementary quality report ──────────────────────────────────────────
     # Equivalent to the elementary_report_asset in Dagster.
 
-    @task(task_id="quality_report")
+    @task(task_id="quality_report", pool="duckdb")
     def quality_report() -> None:
+        env = {**os.environ, "DUCKDB_PATH": str(_DB_PATH)}
+
+        def _run(label: str, cmd: list[str]) -> None:
+            result = subprocess.run(
+                cmd, cwd=_TRANSFORM_DIR, capture_output=True, text=True, env=env
+            )
+            if result.returncode != 0:
+                # edr/dbt write their real errors to stdout, not stderr — surface both.
+                raise AirflowFailException(
+                    f"{label} failed (exit {result.returncode})\n"
+                    f"--- STDOUT ---\n{result.stdout[-3000:]}\n"
+                    f"--- STDERR ---\n{result.stderr[-3000:]}"
+                )
+
+        # Materialize Elementary's observability models. They are excluded from the
+        # Cosmos DbtTaskGroup (which builds only our staging+marts), so their tables
+        # do not exist yet — and `edr report` reads exactly those tables.
+        _run("dbt run --select elementary", [
+            "dbt", "run", "--select", "elementary",
+            "--profiles-dir", str(_TRANSFORM_DIR),
+            "--target", "duckdb",
+        ])
+
         report_path = _TRANSFORM_DIR / "edr_target" / "elementary_report.html"
-        result = subprocess.run(
-            [
-                "edr", "report",
-                "--profiles-dir", str(_TRANSFORM_DIR),
-                "--profile-target", "duckdb",
-                "--project-dir", str(_TRANSFORM_DIR),
-                "--file-path", str(report_path),
-            ],
-            cwd=_TRANSFORM_DIR,
-            capture_output=True,
-            text=True,
-            env={**os.environ, "DUCKDB_PATH": str(_DB_PATH)},
-        )
-        if result.returncode != 0:
-            raise AirflowFailException(f"edr report failed:\n{result.stderr[-2000:]}")
+        _run("edr report", [
+            "edr", "report",
+            "--profiles-dir", str(_TRANSFORM_DIR),
+            "--profile-target", "duckdb",
+            "--project-dir", str(_TRANSFORM_DIR),
+            "--file-path", str(report_path),
+        ])
 
     # ── Wire task dependencies ─────────────────────────────────────────────────
 
