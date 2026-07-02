@@ -18,5 +18,15 @@ jobs:
         run: uv run ruff format --check .
       - name: Type check
         run: uv run mypy src
+      - name: Build dbt manifest
+        # Cosmos loads the DAG from transform/target/manifest.json, which is
+        # gitignored. Generate it (deps + parse, no DB needed) so the DagBag
+        # import test can render the DbtTaskGroup — mirrors the Dockerfile.
+        run: |
+          cd transform
+          uv run dbt deps
+          uv run dbt parse --profiles-dir . --profile meridian_batch --target duckdb
+      - name: Init Airflow metadata DB
+        run: AIRFLOW_HOME="$PWD/.airflow" uv run airflow db migrate
       - name: Test
-        run: uv run pytest
+        run: AIRFLOW_HOME="$PWD/.airflow" uv run pytest
