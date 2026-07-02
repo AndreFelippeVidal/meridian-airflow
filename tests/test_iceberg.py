@@ -22,16 +22,21 @@ def _catalog() -> SqlCatalog:
 
 @pytest.fixture(scope="module", autouse=True)
 def run_iceberg_pipeline() -> None:
-    """Ensure the Iceberg pipeline has run at least once before tests."""
+    """Ensure the Iceberg pipeline has produced >= 2 snapshots before tests.
+
+    Each run appends a new snapshot, so a fresh catalog is seeded with two runs
+    to exercise the time-travel assertion in test_multiple_snapshots_exist.
+    """
     if not (_ICEBERG_DIR / "catalog.db").exists():
         import subprocess
 
-        result = subprocess.run(
-            ["uv", "run", "python", "-m", "ingestion.iceberg_pipeline"],
-            cwd=Path(__file__).parent.parent,
-            capture_output=True,
-        )
-        assert result.returncode == 0, f"iceberg_pipeline failed: {result.stderr}"
+        for _ in range(2):
+            result = subprocess.run(
+                ["uv", "run", "python", "-m", "ingestion.iceberg_pipeline"],
+                cwd=Path(__file__).parent.parent,
+                capture_output=True,
+            )
+            assert result.returncode == 0, f"iceberg_pipeline failed: {result.stderr}"
 
 
 def test_iceberg_catalog_exists() -> None:
