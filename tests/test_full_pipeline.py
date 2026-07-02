@@ -48,9 +48,9 @@ def test_asset_checks_pass() -> None:
     """Key business invariants: daily mart non-empty, GMV non-negative."""
     con = duckdb.connect(str(DB_PATH), read_only=True)
 
-    daily_count = con.execute(
-        "SELECT count(*) FROM main_marts.mart_marketplace_daily"
-    ).fetchone()[0]
+    daily_count = con.execute("SELECT count(*) FROM main_marts.mart_marketplace_daily").fetchone()[
+        0
+    ]
     assert daily_count > 0, "mart_marketplace_daily is empty"
 
     neg_gmv = con.execute(
@@ -58,9 +58,7 @@ def test_asset_checks_pass() -> None:
     ).fetchone()[0]
     assert neg_gmv == 0, f"{neg_gmv} days have negative GMV"
 
-    order_count = con.execute(
-        "SELECT count(*) FROM main_marts.fct_orders"
-    ).fetchone()[0]
+    order_count = con.execute("SELECT count(*) FROM main_marts.fct_orders").fetchone()[0]
     assert order_count > 0, "fct_orders is empty"
 
     con.close()

@@ -28,9 +28,9 @@ def demo_time_travel() -> None:
     table = cat.load_table(("meridian", "orders"))
     snapshots = list(table.snapshots())
 
-    print(f"\n{'='*55}")
+    print(f"\n{'=' * 55}")
     print("  TIME TRAVEL — meridian.orders")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  Total snapshots: {len(snapshots)}")
     for snap in snapshots:
         summary = snap.summary or {}
@@ -57,14 +57,15 @@ def demo_schema_evolution() -> None:
     if "priority" not in col_names:
         with table.update_schema() as update:
             from pyiceberg.types import StringType
+
             update.add_column("priority", StringType())
-        print(f"\n{'='*55}")
+        print(f"\n{'=' * 55}")
         print("  SCHEMA EVOLUTION — added 'priority' column")
-        print(f"{'='*55}")
+        print(f"{'=' * 55}")
     else:
-        print(f"\n{'='*55}")
+        print(f"\n{'=' * 55}")
         print("  SCHEMA EVOLUTION — 'priority' column already present")
-        print(f"{'='*55}")
+        print(f"{'=' * 55}")
 
     updated = cat.load_table(("meridian", "orders"))
     print("  Updated schema columns:", [f.name for f in updated.schema().fields])
@@ -80,17 +81,15 @@ def demo_duckdb_scan() -> None:
     con = duckdb.connect()
     con.execute("INSTALL iceberg; LOAD iceberg;")
 
-    count = con.execute(
-        f"SELECT count(*) FROM iceberg_scan('{metadata_location}')"
-    ).fetchone()[0]
+    count = con.execute(f"SELECT count(*) FROM iceberg_scan('{metadata_location}')").fetchone()[0]
 
     sample = con.execute(
         f"SELECT order_id, status, channel FROM iceberg_scan('{metadata_location}') LIMIT 3"
     ).fetchall()
 
-    print(f"\n{'='*55}")
+    print(f"\n{'=' * 55}")
     print("  DUCKDB ICEBERG SCAN")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  Row count from DuckDB iceberg_scan: {count}")
     print("  Sample rows:")
     for row in sample:

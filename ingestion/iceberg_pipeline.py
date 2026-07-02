@@ -82,9 +82,7 @@ def write_orders_iceberg(catalog: SqlCatalog) -> int:
         {
             "order_id": orders["order_id"].to_list(),
             "customer_id": orders["customer_id"].to_list(),
-            "ordered_at": pa.array(
-                orders["ordered_at"].to_list(), type=pa.timestamp("us")
-            ),
+            "ordered_at": pa.array(orders["ordered_at"].to_list(), type=pa.timestamp("us")),
             "status": orders["status"].to_list(),
             "channel": orders["channel"].to_list(),
         }

@@ -71,6 +71,7 @@ _dbt_execution_config = ExecutionConfig(
 
 # ── DAG ───────────────────────────────────────────────────────────────────────
 
+
 @dag(
     dag_id="meridian_batch",
     description="dlt ingest → dbt staging+marts → row-count checks → Elementary report",
@@ -144,6 +145,7 @@ def meridian_batch_dag() -> None:
     @task(task_id="check_mart_rows", pool="duckdb")
     def check_mart_rows() -> None:
         import duckdb
+
         con = duckdb.connect(str(_DB_PATH), read_only=True)
         for table in ["fct_orders", "mart_marketplace_daily"]:
             count = con.execute(f"SELECT count(*) FROM main_marts.{table}").fetchone()[0]
@@ -173,20 +175,36 @@ def meridian_batch_dag() -> None:
         # Materialize Elementary's observability models. They are excluded from the
         # Cosmos DbtTaskGroup (which builds only our staging+marts), so their tables
         # do not exist yet — and `edr report` reads exactly those tables.
-        _run("dbt run --select elementary", [
-            "dbt", "run", "--select", "elementary",
-            "--profiles-dir", str(_TRANSFORM_DIR),
-            "--target", "duckdb",
-        ])
+        _run(
+            "dbt run --select elementary",
+            [
+                "dbt",
+                "run",
+                "--select",
+                "elementary",
+                "--profiles-dir",
+                str(_TRANSFORM_DIR),
+                "--target",
+                "duckdb",
+            ],
+        )
 
         report_path = _TRANSFORM_DIR / "edr_target" / "elementary_report.html"
-        _run("edr report", [
-            "edr", "report",
-            "--profiles-dir", str(_TRANSFORM_DIR),
-            "--profile-target", "duckdb",
-            "--project-dir", str(_TRANSFORM_DIR),
-            "--file-path", str(report_path),
-        ])
+        _run(
+            "edr report",
+            [
+                "edr",
+                "report",
+                "--profiles-dir",
+                str(_TRANSFORM_DIR),
+                "--profile-target",
+                "duckdb",
+                "--project-dir",
+                str(_TRANSFORM_DIR),
+                "--file-path",
+                str(report_path),
+            ],
+        )
 
     # ── Wire task dependencies ─────────────────────────────────────────────────
 

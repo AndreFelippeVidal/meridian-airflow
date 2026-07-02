@@ -19,10 +19,10 @@ Airflow is deployed in ~80% of data teams. This repo keeps the same synthetic ma
 flowchart LR
     A["meridian-core\n(synthetic domain)"] -->|5 resources| B["dlt\nPipelineTasksGroup"]
     B -->|DuckDB raw schema| C["DuckDB\nmeridian.duckdb"]
-    C --> D["dbt + Cosmos\nDbtTaskGroup"]
-    D -->|staging → marts| C
+    C --> D["dbt + Cosmos\nDbtTaskGroup\n(staging → marts)"]
+    D -->|models built| C
     C -->|row-count check| E["@task\ncheck_mart_rows"]
-    E --> F["Elementary edr\n@task quality_report"]
+    E --> F["@task quality_report\ndbt run --select elementary\n→ edr report HTML"]
 
     subgraph "Airflow 3 DAG — meridian_batch"
         B
@@ -32,7 +32,11 @@ flowchart LR
     end
 ```
 
-Key decisions → [`docs/adr/`](docs/adr/)
+Every task that opens the DuckDB file (dlt, all Cosmos models, both `@task`s)
+shares a **1-slot `duckdb` Airflow pool** so writes are serialized — DuckDB is
+single-writer. See [ADR-0003](docs/adr/0003-duckdb-single-writer-pool.md).
+
+Key decisions → [`docs/adr/`](docs/adr/): [Airflow over Dagster](docs/adr/0002-airflow3-over-dagster.md) · [DuckDB single-writer pool](docs/adr/0003-duckdb-single-writer-pool.md) · [Elementary in the quality task](docs/adr/0004-elementary-in-quality-task.md)
 
 ## Stack
 
@@ -98,11 +102,15 @@ make test           # 21 tests — domain, ingestion, dbt, data quality, Iceberg
 
 **Cosmos + DuckDB**: Cosmos has no built-in `DuckDBProfileMapping`, so you pass `profiles_yml_filepath` directly to `ProfileConfig`. This is ~5 lines but took some discovery. The upside is that Cosmos reads the same `manifest.json` that `dbt compile` generates, so there's no schema duplication.
 
-**Airflow 3 import paths**: Airflow 3 moved `dag`, `task`, and exceptions to `airflow.sdk`. The old `airflow.decorators` paths still work but log deprecation warnings. The cleaner import is `from airflow.sdk import dag, task`.
+**Airflow 3 import paths**: Airflow 3 moved `dag`, `task`, and exceptions to `airflow.sdk`. The old `airflow.decorators` paths still work but log deprecation warnings. The cleaner import is `from airflow.sdk import dag, task`. The Astro image for Airflow 3 also lives on a new registry — `astrocrpublic.azurecr.io/runtime`, not the old `quay.io/astronomer/astro-runtime` (which is still 2.x).
 
-**DuckDB concurrency**: `max_active_runs=1` on the DAG prevents two DAG runs from writing to DuckDB simultaneously. The Cosmos task group also inherits this constraint since it runs inside the same DAG context.
+**DuckDB concurrency — the real fix**: my first instinct, `max_active_runs=1`, only stops two *DAG runs* from overlapping — it does nothing about parallelism *within* a run, and Cosmos runs independent dbt models concurrently. They collided on DuckDB's single-writer lock. The fix is a **1-slot Airflow pool** (`duckdb`) assigned to every task that opens the file — a mutex that lives in orchestration config, not application code. ([ADR-0003](docs/adr/0003-duckdb-single-writer-pool.md))
 
-At 10× scale I'd replace DuckDB with Iceberg on object storage + Trino (or Snowflake), keep dlt and Cosmos, and move Airflow to Astronomer Cloud (or MWAA). The orchestrator swap would be nearly zero-effort — only the profile target changes.
+**Cosmos test ordering**: with the default `TestBehavior.AFTER_EACH`, Cosmos runs each model's tests right after that model builds — but `relationships` tests reference *other* models that may not exist yet, so they failed intermittently. `TestBehavior.AFTER_ALL` defers all tests to a single `transform_test` task after every model is built.
+
+**Elementary ships its own dbt project**: `edr report` runs `dbt deps` against an internal dbt project bundled inside the pip package, in root-owned `site-packages`. In the Astro image the `astro` user can't write there → `Permission denied: 'dbt_packages'`. Two prior fixes aimed at the *wrong* `dbt_packages` (our transform project's, which was fine); the container `ls -la` was what finally pinned the real directory. Fix: `chmod a+w` that internal project at image-build time. Lesson: get ground truth from the running container before theorising.
+
+At 10× scale I'd replace DuckDB with Iceberg on object storage + Trino (or Snowflake), keep dlt and Cosmos, and move Airflow to Astronomer Cloud (or MWAA). The orchestrator swap would be nearly zero-effort — and the whole `duckdb` pool disappears, because a real warehouse handles concurrent writes.
 
 ## Roadmap
 
@@ -113,7 +121,8 @@ At 10× scale I'd replace DuckDB with Iceberg on object storage + Trino (or Snow
 - [x] Airflow 3 DAG (PipelineTasksGroup + DbtTaskGroup + quality @task)
 - [x] DAG structural tests (DagBag)
 - [x] Astro CLI scaffold (Dockerfile + requirements.txt)
-- [ ] GitHub Actions CI
+- [x] End-to-end run in Astro Docker (dlt → dbt → Elementary report, green)
+- [x] GitHub Actions CI (ruff + mypy + pytest)
 - [ ] `astro dev start` integration test (Docker-in-Docker)
 
 ---

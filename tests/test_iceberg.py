@@ -25,6 +25,7 @@ def run_iceberg_pipeline() -> None:
     """Ensure the Iceberg pipeline has run at least once before tests."""
     if not (_ICEBERG_DIR / "catalog.db").exists():
         import subprocess
+
         result = subprocess.run(
             ["uv", "run", "python", "-m", "ingestion.iceberg_pipeline"],
             cwd=Path(__file__).parent.parent,
@@ -93,9 +94,7 @@ def test_duckdb_iceberg_scan() -> None:
 
     con = duckdb.connect()
     con.execute("INSTALL iceberg; LOAD iceberg;")
-    count = con.execute(
-        f"SELECT count(*) FROM iceberg_scan('{metadata_location}')"
-    ).fetchone()[0]
+    count = con.execute(f"SELECT count(*) FROM iceberg_scan('{metadata_location}')").fetchone()[0]
     con.close()
 
     assert count >= _EXPECTED_ORDERS, (

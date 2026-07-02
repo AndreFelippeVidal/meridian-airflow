@@ -18,11 +18,18 @@ def test_edr_report_generates() -> None:
     """edr report must exit 0 and produce a non-empty HTML file."""
     result = subprocess.run(
         [
-            "uv", "run", "edr", "report",
-            "--profiles-dir", ".",
-            "--profile-target", "duckdb",
-            "--project-dir", ".",
-            "--file-path", str(REPORT_PATH),
+            "uv",
+            "run",
+            "edr",
+            "report",
+            "--profiles-dir",
+            ".",
+            "--profile-target",
+            "duckdb",
+            "--project-dir",
+            ".",
+            "--file-path",
+            str(REPORT_PATH),
         ],
         cwd=TRANSFORM_DIR,
         capture_output=True,
@@ -43,20 +50,24 @@ def test_dbt_catches_negative_gmv() -> None:
 
     con = duckdb.connect(str(DB_PATH))
     try:
-        row = con.execute(
-            "SELECT * FROM main_marts.mart_marketplace_daily LIMIT 1"
-        ).fetchone()
+        row = con.execute("SELECT * FROM main_marts.mart_marketplace_daily LIMIT 1").fetchone()
         assert row is not None, "mart_marketplace_daily is empty — run make transform first"
-        con.execute(
-            f"INSERT INTO main_marts.mart_marketplace_daily VALUES {sentinel}"
-        )
+        con.execute(f"INSERT INTO main_marts.mart_marketplace_daily VALUES {sentinel}")
     finally:
         con.close()
 
     # dbt test should report a failure on assert_daily_gmv_non_negative
     result = subprocess.run(
-        ["uv", "run", "dbt", "test", "--profiles-dir", ".",
-         "--select", "assert_daily_gmv_non_negative"],
+        [
+            "uv",
+            "run",
+            "dbt",
+            "test",
+            "--profiles-dir",
+            ".",
+            "--select",
+            "assert_daily_gmv_non_negative",
+        ],
         cwd=TRANSFORM_DIR,
         capture_output=True,
         text=True,
@@ -65,9 +76,7 @@ def test_dbt_catches_negative_gmv() -> None:
     # Clean up BEFORE asserting so we never leave the DB dirty
     con = duckdb.connect(str(DB_PATH))
     try:
-        con.execute(
-            "DELETE FROM main_marts.mart_marketplace_daily WHERE order_date = '9999-12-31'"
-        )
+        con.execute("DELETE FROM main_marts.mart_marketplace_daily WHERE order_date = '9999-12-31'")
     finally:
         con.close()
 

@@ -24,7 +24,7 @@ Use **Airflow 3** via the Astro CLI scaffold (`astro dev init`).
 | dbt transform | `DbtTaskGroup` from Cosmos — reads the same `manifest.json`, one task per model |
 | Row-count guard | `@task` calling DuckDB directly; raises `AirflowFailException` on empty mart |
 | Elementary report | `@task` shelling out `edr report` (same subprocess as Dagster version) |
-| DuckDB write conflict | `max_active_runs=1` on the DAG prevents concurrent DuckDB writes |
+| DuckDB write conflict | A 1-slot `duckdb` Airflow pool serializes every DB-touching task — see [ADR-0003](0003-duckdb-single-writer-pool.md) (`max_active_runs=1` alone is insufficient) |
 | Local dev | `make airflow-dev` runs `airflow standalone`; `make astro-dev` boots the full Docker stack |
 
 ## Consequences
